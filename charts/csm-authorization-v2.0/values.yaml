@@ -1,0 +1,221 @@
+---
+# set to true if installing on an OpenShift Container Platform
+# if enabled, an OpenShift Route will be created instead of a Gateway
+openshift: false
+
+# if enabled, NGINX Gateway Fabric controller will be deployed
+nginx-gateway-fabric:
+  enabled: true
+  nginx:
+    config:
+      # ipFamily: "ipv4"  # Optional: set to "ipv4" (IPv4-only), "ipv6" (IPv6-only), or "dual" (dual-stack).
+    service:
+      externalTrafficPolicy: Cluster
+
+# if enabled, cert-manager will be deployed
+# if cert-manager is already deployed, keep this false
+cert-manager:
+  enabled: true
+
+authorization:
+  # images to use in installation
+  images:
+    proxyService:
+      image: quay.io/dell/container-storage-modules/csm-authorization-proxy:v2.6.1
+    tenantService:
+      image: quay.io/dell/container-storage-modules/csm-authorization-tenant:v2.6.1
+    roleService:
+      image: quay.io/dell/container-storage-modules/csm-authorization-role:v2.6.1
+    storageService:
+      image: quay.io/dell/container-storage-modules/csm-authorization-storage:v2.6.1
+    authorizationController:
+      image: quay.io/dell/container-storage-modules/csm-authorization-controller:v2.6.1
+    opa:
+      image: docker.io/openpolicyagent/opa:0.70.0
+    opaKubeMgmt:
+      image: openpolicyagent/kube-mgmt:11.0.14
+
+  # hostname used for TLS certificate SANs and OpenShift Route
+  # NOTE: additional hostnames can be configured in authorization.gateway.hosts
+  hostname: csm-authorization.com
+
+  # log level for csm-authorization
+  logLevel: debug
+
+  # number, as a string, of concurrent requests for the storage-service to make to a storage array
+  # currently only used with dellctl to list tenant volumes
+  concurrentStorageRequests: "10"
+
+  # tracing configuration
+  # this can be updated on the fly via the csm-config-params configMap
+  zipkin:
+    {}
+    # collectoruri: http://DNS-hostname:9411/api/v2/spans
+    # probability: 1
+
+  # openTelemetryCollectorAddress: the OTLP receiving endpoint using gRPC
+  openTelemetryCollectorAddress: ""
+
+  # gateway configuration for proxy-server
+  # NOTE: For OpenShift, this section configures the Ingress resource (not Gateway API)
+  gateway:
+    gatewayClassName: nginx
+
+    # additional hostnames for routing
+    # For Kubernetes: use the NGINX Gateway Fabric service, e.g., authorization-gateway-nginx.<namespace>.svc.cluster.local
+    # For OpenShift: use the OpenShift Router service, e.g., router-internal-default.openshift-ingress.svc.cluster.local
+    hosts:
+      []
+      # - authorization-gateway-nginx.{{ include "custom.namespace" . }}.svc.cluster.local
+
+    # listener port (default 443)
+    port: 443
+
+    # additional annotations for the Gateway resource
+    annotations: {}
+
+  # storage capacity poll interval
+  storageCapacityPollInterval: 30m
+
+  # controller reconcile interval as a Go duration (for example, 5m or 30s)
+  controllerReconcileInterval: 5m
+
+  # metrics: configuration for proxy-server Prometheus metrics
+  metrics:
+    # enabled: Enable/Disable the Prometheus metrics HTTP server on the proxy-server.
+    # When true, the proxy-server receives X_CSI_METRICS_ENABLED=true,
+    # X_CSI_METRICS_PORT, and a metrics Service is created.
+    # Default value: true
+    enabled: true
+
+    # port: Port on which the proxy-server metrics endpoint is exposed.
+    # Passed as X_CSI_METRICS_PORT (formatted as ":port") to the proxy-server container
+    # and used as targetPort in the metrics Service.
+    # Default value: 2112
+    port: 2112
+
+    # tlsCertSecret: Name of a Kubernetes TLS Secret (tls.crt / tls.key) used to
+    # serve the metrics endpoint over HTTPS instead of plain HTTP.
+    # When set, X_CSI_METRICS_TLS_CERT_FILE and X_CSI_METRICS_TLS_KEY_FILE are
+    # injected into the proxy-server container.
+    # Leave empty (default) to use plain HTTP.
+    # Default value: "" (disabled - plain HTTP)
+    tlsCertSecret: ""
+
+    # serviceMonitor: Controls optional Prometheus Operator ServiceMonitor creation.
+    serviceMonitor:
+      # enabled: When true, a ServiceMonitor CR is created for automatic Prometheus
+      # Operator integration targeting the proxy-server pods.
+      # Requires the Prometheus Operator CRDs to be installed in the cluster.
+      # Default value: false
+      enabled: false
+      # interval: Prometheus scrape interval for the metrics endpoint.
+      # Default value: "30s"
+      interval: "30s"
+      # scrapeTimeout: Prometheus scrape timeout for the metrics endpoint.
+      # Default value: "" (inherits Prometheus global scrape_timeout, typically 10s)
+      scrapeTimeout: ""
+      # insecureSkipVerify: Controls TLS certificate verification when scraping.
+      # Only used when metrics.tlsCertSecret is set (HTTPS endpoint).
+      # Default value: false
+      insecureSkipVerify: false
+
+    # prometheusRule: Controls optional Prometheus Operator PrometheusRule creation.
+    # When true, a PrometheusRule CR is created with alert definitions for the
+    # authorization proxy metrics endpoint.
+    # Requires the Prometheus Operator CRDs to be installed in the cluster.
+    # Default value: true
+    prometheusRule:
+      enabled: true
+      # authFailureRateThreshold: Ratio threshold for the high authorization
+      # failure-rate alert (P4.AUTH.2). Default value: 0.10
+      authFailureRateThreshold: 0.10
+      # authLatencyQuantile: Quantile used for the high latency alert (P4.AUTH.7).
+      # Default value: 0.95
+      authLatencyQuantile: 0.95
+      # authLatencyThresholdSeconds: Latency threshold in seconds for the high
+      # latency alert (P4.AUTH.7). Default value: 2.0
+      authLatencyThresholdSeconds: 2.0
+
+redis:
+  name: redis-csm
+  # Redis credentials are required and can be provided in one of two ways:
+  # 1. Directly via redisUsername/redisPassword (a Kubernetes secret will be created automatically)
+  # 2. Via a Secret Store CSI driver (specify the SecretProviderClass details below)
+  #
+  # Option 1: Provide credentials directly
+  redisUsername:
+  redisPassword:
+
+  # Option 2: Use a Secret Store CSI driver
+  redisSecretProviderClass:
+    # Name of the SecretProviderClass that holds the Redis secretObject.
+    secretProviderClassName:
+    # Name of the Kubernetes secret (created by the Secret Store CSI driver) that contains Redis credentials.
+    redisSecretName:
+    # Key in the secret that stores the Redis username.
+    redisUsernameKey:
+    # Key in the secret that stores the Redis password.
+    redisPasswordKey:
+
+    # Paths for Conjur secrets that store the Redis username and password.
+    # conjur:
+    #   passwordPath: secrets/redis-password
+    #   usernamePath: secrets/redis-username
+
+  sentinel: sentinel
+  rediscommander: rediscommander
+  replicas: 5
+  # IP family used by Redis Commander. Keep this aligned with nginx-gateway-fabric.nginx.config.ipFamily.
+  # Set to "ipv6" or "dual" to enable the IPv6 DNS initialization workaround.
+  ipFamily: ""
+  images:
+    redis:
+      image: redis:8.10.1-alpine
+    commander:
+      image: rediscommander/redis-commander:latest
+
+# Optional:
+# Config secret configuration:
+# If using a Secret Store CSI driver, specify the SecretProviderClass details that holds the config secretObject.
+# Otherwise leave the fields blank and create the "karavi-config-secret" Kubernetes secret.
+config:
+  configSecretProviderClass:
+    # Name of the SecretProviderClass that holds the config secretObject.
+    secretProviderClassName:
+    # Name of the Kubernetes secret (created by the Secret Store CSI driver) that contains the config secret.
+    configSecretName:
+
+    # Uncomment this section if using Conjur to store the config secret, otherwise leave commented out.
+    # Path for Conjur secret that stores the config secret.
+    # conjur:
+    #   secretPath: secrets/config-object
+
+# Comment and uncomment the appropriate sections below to use the desired method.
+# Storage system credentials can be provided in one of two ways:
+# 1. Using a SecretProviderClass (for dynamic secrets from external providers)
+# 2. Using a Kubernetes Secret (for static credentials)
+# Only one of the two can be specified at a time.
+storageSystemCredentials:
+  secretProviderClasses:
+    vault:
+      - secretProviderClassName1
+      # - secretProviderClassName2
+      # - secretProviderClassName3
+
+    # conjur:
+    #   - name: secretProviderClassName1
+    #     paths:
+    #       - passwordPath: secrets/password1
+    #         usernamePath: secrets/username1
+    #       - passwordPath: secrets/password2
+    #         usernamePath: secrets/username2
+    #   - name: secretProviderClassName2
+    #     paths:
+    #       - passwordPath: secrets/password3
+    #         usernamePath: secrets/username3
+
+  # secrets:
+  #   - secret-1
+  #   - secret-2
+  #   - secret-3

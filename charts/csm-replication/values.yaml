@@ -1,0 +1,91 @@
+# replicas: Defines number of controller replicas
+# Allowed values: int
+# Default value: 1
+replicas: 1
+
+# image: Defines controller image. This shouldn't be changed
+# Allowed values: string
+image: quay.io/dell/container-storage-modules/dell-replication-controller:v1.16.0
+
+# logLevel: Defines initial log level for controller. This can be changed in runtime
+# Allowed values: "debug", "info", "warn", "error", "panic"
+# Default value: "info"
+logLevel: "info"
+
+# leaderElection: Enable leader election for dell-replication-controller manager.
+# Enabling this will ensure there is only one active dell-replication-controller manager.
+# Allowed values: "true", "false"
+# Default value: "true"
+leaderElection: "true"
+
+# retryIntervalMin: Initial retry interval of failed reconcile request.
+# It doubles with each failure, upto retry-interval-max
+# Allowed values: time
+retryIntervalMin: 1s
+
+# retryIntervalMax: Maximum retry interval of failed reconcile request
+# Allowed values: time
+retryIntervalMax: 5m
+
+# disablePVCRemap: Disable PVC remapping for replication in single cluster configuration
+# Allowed values: "true", "false"
+# Default value: "false"
+disablePVCRemap: "false"
+
+# enableKubevirtPVCRemap: Enable KubeVirt PVC remapping functionality
+# When enabled, the replication controller will handle DataVolume dependencies
+# during PVC remap for KubeVirt-backed PVCs.
+# Allowed values: "true", "false"
+# Default value: "false"
+enableKubevirtPVCRemap: "false"
+
+# allowPvcCreationOnTarget: It Creates PVC on target cluster using replicated PV.
+# Allowed values:
+#   true: It creates a PVC on target cluster against replicated PV
+#   false: simply updates claimref on replicated PV on target cluster without actually creating a PVC
+# Default value: false
+allowPvcCreationOnTarget: "false"
+
+# Metrics configuration for replication controller
+metrics:
+  enabled: false
+  port: 8445
+  tlsCertSecret: ""
+  collection:
+    interval: "30s"
+  serviceMonitor:
+    enabled: false
+    interval: "30s"
+    scrapeTimeout: ""
+    insecureSkipVerify: false
+  # prometheusRule: configures PrometheusRule creation for alert rules
+  # The alert metrics are produced by dell-csi-replicator in the CSI driver controller pod.
+  # Enable replication metrics and its ServiceMonitor in the installed CSI driver chart,
+  # and set metricsNamespace below when that driver is in a different namespace.
+  prometheusRule:
+    # enabled: Enable/Disable PrometheusRule creation
+    # Requires metrics.enabled to also be true
+    # Allowed values: true, false
+    # Default value: false
+    enabled: false
+    # metricsNamespace: Namespace where the CSI driver chart exposes dell-csi-replicator metrics.
+    # Defaults to this chart's release namespace; set it when the CSI driver runs elsewhere.
+    metricsNamespace: ""
+    # rpoThresholdSeconds: lag threshold for REP-01/REP-02 alerts (30-86400 seconds)
+    # Default value: 300 (5 minutes)
+    rpoThresholdSeconds: 300
+    # srdfMinBandwidth: minimum SRDF bandwidth threshold in bytes/s for REP-07 (PowerMax only, 1-1073741824)
+    # Default value: 10485760 (10 MB/s)
+    srdfMinBandwidth: 10485760
+    # srdfLagSeconds: SRDF lag threshold for REP-12 in seconds (PowerMax only, 30-86400)
+    # Default value: 300 (5 minutes)
+    srdfLagSeconds: 300
+
+# HostAliases: Optional features that allows <hostname:IP> entries injection into pod's /etc/hosts file
+# hostAliases:
+#  - ip: "10.10.10.10"
+#    hostnames:
+#      - "foo.bar"
+#  - ip: "10.10.10.11"
+#    hostnames:
+#      - "foo.baz"

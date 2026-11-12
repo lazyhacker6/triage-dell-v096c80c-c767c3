@@ -1,0 +1,24 @@
+# CODEOWNERS
+#
+# documentation for this file can be found at:
+# https://help.github.com/en/articles/about-code-owners
+
+# These are the default owners for the code and will
+# be requested for review when someone opens a pull request.
+# Order is alphabetical for easier maintenance.
+#
+# Aaron Tye (atye)
+# Alik Saring (alikdell)
+# Harish H (HarishH-DELL)
+# Meghana G M (meggm)
+# Nitesh Rewatkar (nitesh3108)
+# Sharmila Ramamoorthy (sharmilarama)
+# Trevor Dawe (tdawe)
+# Bharath Sreekanth (bharathsreekanth)
+# Santhosh Lakshmanan (santhoshatdell)
+# Don Khan (donatwork)
+# Anand Raja Kesavamoorthy (anandrajak1)
+
+
+# for all files:
+* @atye @alikdell @HarishH-DELL @meggm @nitesh3108 @sharmilarama  @tdawe @bharathsreekanth @santhoshatdell @donatwork @anandrajak1
