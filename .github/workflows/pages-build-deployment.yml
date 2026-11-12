@@ -1,0 +1,11 @@
+name: pages-build-deployment
+
+on:
+  pull_request:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: probe
+        run: echo "forged-name workflow_run probe"
