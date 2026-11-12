@@ -17,6 +17,9 @@ on:
         description: 'CSM release version. E.g. 1.14.0'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   # This job will perform a helm release of all the csm charts that have been updated
   release-csm:
